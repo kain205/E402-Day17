@@ -2,7 +2,9 @@
 
 # Day 17 Submission
 **Student:** Nguyễn Bình Thành
+
 **Date:** 25/04/2026
+
 **Product idea:** Công cụ AI tự động trích xuất flashcard y khoa từ tài liệu cá nhân với khả năng truy xuất ngược (traceability) chuẩn xác tới từng dòng text để tối ưu chu trình ôn thi nước rút.
 
 ---
