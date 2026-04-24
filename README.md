@@ -1,125 +1,142 @@
-# E402-Day17
-
 # Day 17 Submission
 **Student:** Nguyễn Bình Thành
-
 **Date:** 25/04/2026
-
-**Product idea:** Công cụ AI tự động trích xuất flashcard y khoa từ tài liệu cá nhân với khả năng truy xuất ngược (traceability) chuẩn xác tới từng dòng text để tối ưu chu trình ôn thi nước rút.
+**Product idea:** Engine chẩn đoán điểm mù kiến thức từ tài liệu cá nhân — giúp sinh viên biết *chính xác* nên học gì trong thời gian còn lại, thay vì đoán mò.
 
 ---
 
 ## 1. MVP Boundary Sheet
 
 **Riskiest Assumption:**
-> Chúng tôi tin rằng rủi ro lớn nhất là sinh viên Y khoa (những người có zero-tolerance với kiến thức sai) sẽ không đủ tin tưởng để học theo Flashcard do AI tạo ra, sợ hãi việc AI bịa đặt (hallucination) dẫn đến sai lệch kiến thức lâm sàng.
+> Sinh viên *không biết mình không biết chỗ nào* — và họ sẵn sàng để hệ thống chỉ ra điểm mù đó thông qua một bài quiz chẩn đoán nhanh, thay vì tự quyết định học gì trước theo cảm tính.
+
+*(Nếu assumption này sai — tức là sinh viên thực ra đã biết rõ mình yếu chỗ nào — thì toàn bộ giá trị của sản phẩm sụp đổ. Đây mới là điều cần test trước tiên, không phải vấn đề hallucination.)*
 
 **In-Scope** (tối đa 3):
-- [x] Luồng tạo Flashcard 1-chạm từ PDF/Text/Ảnh — test giả định: Giải quyết triệt để thời gian chết do phải tạo tài liệu thủ công.
-- [x] Nút "Xem nguồn" (Traceability / Source Citation) chia đôi màn hình highlight text gốc — test giả định: Xây dựng sự tin tưởng tuyệt đối, phá vỡ rào cản hoài nghi AI.
-- [x] Contextual Chatbot giới hạn (sandbox) trong file gốc đính kèm thẻ — test giả định: Đáp ứng nhu cầu đào sâu (deep-dive) kiến thức an toàn mà không cần thoát khỏi ngữ cảnh ôn tập.
+- [x] **Diagnostic Quiz Loop:** Sau khi upload tài liệu, hệ thống tự động sinh một bộ câu hỏi chẩn đoán nhanh (15–20 câu). Mục tiêu không phải để học — mà để *đo*: sinh viên đang chắc chỗ nào, mù chỗ nào.
+- [x] **Study Priority Map:** Output sau quiz không phải flashcard deck — mà là một bản đồ ưu tiên: *"Bạn còn N tiếng. Đây là 3 chủ đề bạn nên tập trung, theo thứ tự."* Được tính dựa trên điểm quiz + phân bổ nội dung trong tài liệu.
+- [x] **Targeted Remediation:** Với mỗi chủ đề bị đánh dấu yếu, hệ thống mở một môi trường học tập có cả hai chế độ: flashcard để drill (active recall), và chatbot để giải thích sâu — *giới hạn trong file tài liệu gốc của người dùng*.
 
 **Out-of-Scope:**
-- Xây dựng Cold Cache / Database giáo trình tĩnh (Medical Ontology) — lý do bỏ: Tốn kém, rủi ro compliance y tế cao, làm chậm thời gian ra mắt MVP. Chỉ tập trung Local RAG.
-- Tính năng chia sẻ bộ thẻ (Community Hub) — lý do bỏ: MVP cần chứng minh user có thể nhận giá trị từ việc tự học bộ thẻ của chính mình trước. Tránh rắc rối bản quyền tài liệu.
+- **Spaced Repetition (SRS):** SRS được thiết kế cho horizon tháng → năm. Với sinh viên còn 3 ngày trước thi, lịch "review sau 4 ngày" không có nghĩa gì. SRS sẽ được xem xét lại khi sản phẩm phục vụ người học dài hạn.
+- **Cold database giáo trình dùng chung:** AI chỉ làm việc với tài liệu người dùng upload — không phải bách khoa toàn thư Y tế.
+- **Community / Chia sẻ bộ thẻ:** Tập trung làm mượt luồng cá nhân trước.
 
 **Non-Goals:**
-- Tuyệt đối không trở thành "Bách khoa toàn thư Y tế".
-- Cấm AI tự ý sử dụng kiến thức ngoài internet để trả lời hoặc tạo thẻ nếu thông tin đó không xuất hiện trong tài liệu user upload.
+- Thay thế việc đọc sâu tài liệu. Sản phẩm này giúp người dùng *phân bổ thời gian*, không thay thế việc học.
+- Chatbot được phép dùng kiến thức ngoài file upload. Mọi câu trả lời phải được giới hạn trong tài liệu gốc — không phải vì kỹ thuật, mà vì đây là cam kết an toàn với sinh viên Y khoa.
 
 ---
 
 ## 2. PRD Skeleton
 
 ### Problem Statement
-> Sinh viên Y khoa tốn quá nhiều thời gian và năng lượng chuyển đổi thủ công tài liệu (slide, handnote) thành thẻ ghi nhớ Anki/Quizlet, khiến họ kiệt sức trước khi thực sự bước vào chu trình học thuộc (active recall), dẫn đến kém hiệu quả và hoảng loạn sát kỳ thi.
+> Sinh viên ôn thi không thiếu tài liệu — họ thiếu khả năng biết *nên dùng thời gian còn lại vào đâu*. Khi còn 3 ngày (hoặc 3 tiếng) trước kỳ thi, quyết định "học phần nào trước" thường được đưa ra bằng cảm tính hoặc theo thứ tự tài liệu — không phải theo điểm yếu thật sự. Kết quả: sinh viên ôn đi ôn lại chỗ đã biết, bỏ qua chỗ thực sự mù, vào phòng thi vẫn hụt điểm ở những phần tưởng đã ổn.
 
 ### Target User
-> Sinh viên Y khoa năm 1-4 tại các trường Đại học (như Y Hà Nội, Y Dược TP.HCM), quen thuộc với phương pháp Active Recall, đang trong trạng thái quá tải khối lượng bài vở trước kỳ thi 1-3 tuần.
+> Sinh viên có tài liệu PDF/slide của môn học, đang trong giai đoạn ôn thi (1–14 ngày trước thi), và chưa có cách hệ thống nào để biết mình đang yếu chỗ nào *tương đối với lượng nội dung còn lại cần cover*.
+
+*(Không giới hạn ở sinh viên Y khoa — nhưng Y khoa là vertical đầu tiên vì: lượng tài liệu cực lớn, chi phí sai cao, và hành vi ôn thi bằng flashcard đã có sẵn.)*
 
 ### User Stories
-**Story 1: The Generator**
-> As a sinh viên Y khoa đang ôn thi, I want to tải lên 1 file PDF bài giảng dài 50 trang và bấm tạo thẻ, so that tôi có ngay 100 thẻ flashcard chia theo chủ đề lâm sàng mà không mất hàng giờ copy-paste.
 
-**Story 2: The Skeptic**
-> As a sinh viên vô cùng cẩn thận với kiến thức, I want to bấm nút "Xem nguồn" trên một thẻ flashcard về liều lượng thuốc, so that màn hình ngay lập tức trích xuất và highlight đúng dòng tài liệu gốc, giúp tôi an tâm 100% học mà không sợ AI bịa kiến thức.
+**Story 1: The Triage Seeker**
+> As a sinh viên năm 3 Y khoa còn 4 ngày trước thi Nội khoa, I want to upload slide bài giảng và trả lời nhanh 20 câu hỏi chẩn đoán, So that hệ thống chỉ ra cho tôi: tôi đang yếu nhất ở Suy tim và Đái tháo đường type 2 — và gợi ý tôi nên dành 60% thời gian còn lại vào hai phần này, không phải theo thứ tự slide.
+
+**Story 2: The Skeptic (giữ lại, nhưng đặt đúng vị trí)**
+> As a sinh viên cực kỳ cẩn thận với độ chính xác lâm sàng, I want to khi hệ thống chỉ ra tôi yếu ở "Cơ chế bệnh sinh Suy tim trái", tôi có thể bấm vào và thấy đúng đoạn text trong slide gốc mà hệ thống dùng để tạo câu hỏi, So that tôi tin rằng bài quiz đang đo đúng nội dung tôi cần học — không phải AI bịa ra câu hỏi từ kiến thức ngoài luồng.
+
+*(Traceability là cơ chế xây dựng trust cho Diagnostic Loop — không phải tính năng độc lập.)*
+
+**Story 3: The Focused Driller**
+> As a sinh viên đã biết mình yếu phần Nội tiết, I want to vào đúng phần đó và có hai chế độ sẵn: flashcard để tự drill active recall, và chatbot để hỏi lại khi không hiểu — tất cả đều giới hạn trong slide của tôi, So that tôi không bị phân tâm bởi kết quả Google hay câu trả lời không liên quan đến đề thi của trường mình.
 
 ### AI-Specific
 
 **Model Selection:**
-- Model: GPT-4o-mini (hoặc Claude 3.5 Haiku)
-- Lý do chọn: Tối ưu chi phí, tốc độ cao (latency thấp) và cực kỳ xuất sắc trong việc tuân thủ JSON format để bóc tách cặp Q&A kèm metadata trích dẫn.
-- Trade-offs chấp nhận: Giới hạn độ dài file upload trong 1 lần (ví dụ: tối đa 30 trang) để đảm bảo tốc độ tạo thẻ dưới 60 giây.
-- Trade-offs không chấp nhận: Hallucination. AI thà báo lỗi "Không trích xuất được nội dung" còn hơn tự bịa ra câu hỏi/đáp án.
+- Model: GPT-4o-mini (generation) + text-embedding-3-small (retrieval cho chatbot).
+- Lý do: Đủ năng lực sinh câu hỏi chẩn đoán chất lượng tốt; chi phí kiểm soát được; context window đủ cho tài liệu vừa phải.
+- Trade-off chấp nhận: Giới hạn số trang/lần upload để đảm bảo tốc độ.
+- Trade-off không chấp nhận: Câu hỏi chẩn đoán không trace được về tài liệu gốc. Mọi câu hỏi phải có `source_chunk_id` để hệ thống có thể hiện ngược lại đoạn text tương ứng.
 
 **Data Requirements:**
-- Nguồn: Dữ liệu cá nhân user tự tải lên (PDF, Slide, Note tĩnh).
-- Owner: User hoàn toàn sở hữu và quản lý.
-- Update frequency: Dữ liệu tĩnh theo từng phiên upload.
+- Nguồn: File cá nhân (PDF, slide) do user tải lên.
+- Owner: User hoàn toàn sở hữu và kiểm soát.
+- Chatbot context: Chỉ dùng chunks từ file đã upload — không call internet, không dùng pretrained knowledge ngoài luồng.
 
 **Fallback UX:**
-- Chiến lược: Graceful Handover kết hợp Quản trị kỳ vọng.
-- Trigger: Khi Confidence score của hệ thống trích xuất thấp, hoặc user đặt câu hỏi cho Chatbot ngoài phạm vi file gốc.
-- Hành động: Gắn cờ (flag) màu cam "Cần review" trên các thẻ AI không tự tin. Chatbot tự động trả lời: "Tài liệu bạn cung cấp không chứa thông tin này, vui lòng kiểm tra lại giáo trình chuẩn."
-- User options: Cho phép user Edit trực tiếp mặt thẻ, hoặc bấm nút "Báo lỗi" để xóa thẻ.
+- Khi chatbot nhận câu hỏi ngoài phạm vi file: từ chối rõ ràng — *"Tài liệu bạn cung cấp không đề cập đến điều này. Để đảm bảo chính xác, hãy đối chiếu với giáo trình chuẩn."*
+- Khi quiz chẩn đoán không đủ câu hỏi để phân loại chủ đề: thông báo rõ và cho phép người dùng tự chọn focus area thủ công.
 
 ### Success Metrics
-- Primary metric: Tỷ lệ (%) user hoàn thành ôn tập (review) ít nhất 50 thẻ flashcard trong vòng 48 giờ sau khi tạo Deck đầu tiên.
-- Ngưỡng thành công: > 30% user upload tài liệu đạt được mốc này.
-- Timeframe đo lường: 30 ngày kể từ lúc launch MVP.
+- **Primary metric:** Tỷ lệ người dùng hoàn thành ít nhất 1 Diagnostic Quiz *và* sau đó tiếp tục học ít nhất 20 phút trong phần được hệ thống gợi ý là yếu nhất.
+- **Ngưỡng thành công:** > 40% user đạt được hành vi này trong session đầu tiên.
+- **Timeframe:** 30 ngày sau launch.
 
-### Dependencies & Constraints
-- Giải pháp Parsing PDF y khoa đủ tốt để không làm vỡ cấu trúc các bảng biểu phân tích chỉ số cận lâm sàng.
-- Chi phí API LLM + Vector DB phải được kiểm soát dưới mức LTV (Life-time Value) dự kiến của sinh viên.
+*(Nếu người dùng làm quiz nhưng không học theo gợi ý → hệ thống chẩn đoán đúng nhưng output không đủ thuyết phục. Nếu không làm quiz → assumption về meta-ignorance sai. Cả hai case đều cho signal rõ.)*
+
+**Vanity Metrics sẽ không dùng:**
+- Tổng số câu hỏi được tạo.
+- Lượt upload tài liệu.
+- Thời gian dùng app (có thể cao vì người dùng lạc lối, không phải vì engaged).
 
 ---
 
 ## 3. Hypothesis Table
 
-### Hypothesis 1 (cho tính năng In-Scope #2 - Traceability)
-> "Chúng tôi tin rằng [tính năng truy xuất ngược highlight file gốc] sẽ giúp [sinh viên Y khoa hoài nghi] đạt được [sự tin tưởng tuyệt đối để học theo AI].
-> Chúng tôi sẽ biết mình đúng khi thấy [tần suất bấm nút "Xem nguồn"] giảm dần đều [sau 3 session ôn tập đầu tiên của user]."
+### Hypothesis 1 — Core Assumption
+> "Chúng tôi tin rằng [sinh viên không biết chính xác mình yếu chỗ nào tương đối với thời gian còn lại] là một pain point thực sự — không phải chỉ là cảm nhận của nhóm làm sản phẩm.
+> Chúng tôi sẽ biết mình đúng khi [> 40% user tiếp tục học theo Study Priority Map sau khi hoàn thành Diagnostic Quiz] trong 30 ngày đầu."
 
-Riskiest assumption: Nếu không có nút "Xem nguồn", user sẽ vứt bỏ app ngay từ thẻ flashcard đầu tiên họ cảm thấy "hơi lạ".
-Cách test cheapest: Wizard of Oz — Tự làm thủ công 1 deck Anki 20 thẻ, kèm theo ảnh chụp màn hình crop thẳng từ slide đính vào phần giải thích. Đưa cho 5 bạn cùng nhóm học thử xem tốc độ ghi nhớ và sự tự tin của họ có tăng lên không.
+**Riskiest assumption:** Sinh viên *chưa* có cách tự biết điểm yếu — tức là họ đang ra quyết định học theo cảm tính, không theo data.
+
+**Cheapest test:** Phỏng vấn 5 sinh viên Y bằng một câu duy nhất: *"Lần gần nhất ôn thi, bạn quyết định học phần nào trước như thế nào?"* — nếu câu trả lời là "tôi đọc slide từ đầu" hoặc "tôi học phần nào cảm giác không chắc" → hypothesis được ủng hộ. Nếu câu trả lời là "tôi có checklist cụ thể" → cần revisit.
+
+### Hypothesis 2 — Trust via Traceability
+> "Chúng tôi tin rằng [khi câu hỏi chẩn đoán có thể trace ngược về đúng đoạn text trong tài liệu gốc], sinh viên Y khoa sẽ tin tưởng kết quả chẩn đoán đủ để học theo — thay vì bỏ qua vì nghi AI bịa.
+> Chúng tôi sẽ biết mình đúng khi [tỷ lệ 'click Xem Nguồn → tiếp tục học' > tỷ lệ 'click Xem Nguồn → bỏ app']."
 
 ---
 
 ## 4. PMF Scorecard
 
 **Aha Moment:**
-> Đọc một thẻ flashcard khó → nghi ngờ → bấm nút "Xem Nguồn" → màn hình chia đôi chỉ đúng dòng chữ trong file giáo trình của mình → thở phào nhẹ nhõm, xác nhận AI đáng tin và quẹt thẻ (swipe) liên tục không dừng.
+> Sinh viên làm xong 20 câu quiz chẩn đoán → màn hình hiện ra: *"Bạn chắc 85% phần Tim mạch. Bạn đang mù ở Nội tiết và Thận. Còn 3 ngày — đây là kế hoạch."* → Sinh viên nhìn vào và nghĩ: *"Đây đúng là thứ mình cần."* → Bắt đầu học ngay phần Nội tiết mà không cần suy nghĩ thêm.
 
 **Actionable Metric:**
-> Actionable Retention: Số lượng user thực hiện thao tác quẹt (review) tối thiểu 50 thẻ flashcard trong 48h đầu tiên.
+> Tỷ lệ user hoàn thành Diagnostic Quiz *và* tiếp tục học theo Study Priority Map ít nhất 20 phút trong cùng session.
 
 **PMF Method:**
-> Aha Moment tracking.
-> Ngưỡng thành công: 30% user đăng ký mới đạt được Aha Moment trong 2 ngày đầu.
+> Behavioral funnel: Upload → Quiz Complete → Priority Map viewed → Remediation started → 20-min session.
+> Drop-off ở bước nào = signal rõ cần fix ở bước đó.
 
 **Vanity Metrics tôi sẽ không dùng:**
-- Số lượng tài liệu (PDF) được upload (Upload rác mà không học thì vô nghĩa).
-- Tổng số thẻ Flashcard được AI generate (Generate dễ, Consume mới khó).
+- Tổng lượt upload (upload xong bỏ không học = không có PMF).
+- Số flashcard được tạo.
+- Thời gian trung bình trong app.
 
 ---
 
 ## 5. AI Critique Log
 
 **Điểm AI chỉ ra:**
-1. Scope Creep ở "Shareable Link/Cộng đồng" — Action: Accept — Lý do: Đã đẩy hoàn toàn sang Out-of-Scope để tập trung làm mượt luồng Personal Use và Traceability.
-2. Fallback UX mơ hồ khi AI thiếu context — Action: Accept — Lý do: Đã bổ sung cơ chế Graceful Handover (Chatbot từ chối trả lời nếu thông tin nằm ngoài Sandbox file gốc).
-3. Vanity Metric "Số lượng thẻ tạo ra" — Action: Accept — Lý do: Đã chuyển hướng sang tracking "Số thẻ được Review/Học" (Actionable Metric).
+1. *"Bounded chatbot from your docs đã có NotebookLM — miễn phí, Google build."* — Action: Accept — Lý do: Đúng. Chatbot không phải core differentiator. Đã hạ chatbot xuống thành tool bên trong Priority Map, không phải sản phẩm chính.
+2. *"SRS giải quyết 'nhớ lâu' — nhưng sinh viên ôn thi không cần nhớ lâu, họ cần pass ngày mai."* — Action: Accept — Lý do: SRS đã bị loại khỏi scope. Diagnostic Loop thay thế vì giải quyết đúng constraint thời gian.
+3. *"Riskiest assumption không phải hallucination trust mà là: sinh viên có thực sự không biết mình yếu chỗ nào không?"* — Action: Accept — Lý do: Đã thay thế toàn bộ riskiest assumption và thiết kế cheapest test xung quanh câu hỏi này.
 
-**Thay đổi lớn nhất giữa Version A và Version B:**
-> Thay đổi hoàn toàn định vị từ một "Hệ thống quản lý lộ trình tĩnh" sang "AI Flashcard Generator tích hợp Traceability". Quyết định cắt bỏ việc xây dựng Medical Ontology (Cold Cache) giúp MVP nhẹ hơn, khả thi về mặt kỹ thuật, và giải quyết trực diện, tức thì nỗi đau "Active Recall" của sinh viên Y.
+**Thay đổi lớn nhất giữa v1 và v2:**
+> v1 framing: *"App tạo flashcard nhanh hơn Anki + chatbot giới hạn file."*
+> v2 framing: *"Engine chẩn đoán điểm mù — flashcard và chatbot là tool bên trong, không phải sản phẩm."*
+> Thay đổi này kéo theo toàn bộ PRD: problem statement, user stories, metric, và aha moment đều được viết lại.
 
 ---
 
-## 6. Self-assessment
+## 6. Self-Assessment
 
-Mắt xích nào trong [MVP Boundary → PRD → Hypothesis → PMF] bạn đang yếu nhất?
-> Kỹ thuật thực thi tính năng Traceability: Làm sao để AI trích xuất được tọa độ chính xác (Bounding Box) của đoạn text trên file PDF, sau đó Render ngược lại lên UI để highlight mượt mà cho sinh viên xem. 
+**Mắt xích yếu nhất:**
+> Hypothesis 1 chưa được test bằng data thật. Toàn bộ sản phẩm đứng trên assumption rằng sinh viên đang ra quyết định học theo cảm tính — chứ không phải theo một hệ thống cá nhân nào đó mà tôi chưa biết. Cần 5 user interview trước khi viết thêm bất cứ dòng code nào cho Diagnostic Loop.
 
-Open questions bạn muốn giải đáp tiếp:
-1. Nên áp dụng chiến lược thu phí (Pricing) như thế nào ở giai đoạn PMF? Thu theo gói Subscription tháng hay bán Token theo dung lượng PDF upload?
-2. Trong MVP, có nên loại bỏ hoàn toàn đầu vào là "Ảnh chụp vở ghi chép tay" để đảm bảo Accuracy cao nhất, chấp nhận hy sinh một phần User Experience không?
+**Open questions:**
+1. Sinh viên có *tin* vào kết quả chẩn đoán của AI hay họ sẽ override theo cảm tính? Nếu override → Diagnostic Loop không có giá trị dù đúng.
+2. Study Priority Map nên output dưới dạng gì để actionable nhất: danh sách chủ đề? Timeline? Phần trăm thời gian? Cần test với user thật.
+3. Với sinh viên không phải Y khoa (luật, kế toán, kỹ thuật) — pain point tương tự không? Vertical mở rộng cần được validate riêng, không assume.
