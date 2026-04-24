@@ -57,8 +57,8 @@
 - Model: GPT-4o-mini (generation) + text-embedding-3-small (retrieval cho chatbot).
 - Lý do: Đủ năng lực sinh câu hỏi chẩn đoán chất lượng tốt; chi phí kiểm soát được; context window đủ cho tài liệu vừa phải.
 - Trade-off chấp nhận: Giới hạn số trang/lần upload để đảm bảo tốc độ.
-- Trade-off không chấp nhận: Câu hỏi chẩn đoán không trace được về tài liệu gốc. Mọi câu hỏi phải có `source_chunk_id` để hệ thống có thể hiện ngược lại đoạn text tương ứng.
-
+- Trade-off không chấp nhận: Một câu trả lời đúng không đồng nghĩa với việc sinh viên thực sự hiểu — hệ thống phải capture confidence trước khi reveal để phân biệt mastery thật với lucky guess.
+- 
 **Data Requirements:**
 - Nguồn: File cá nhân (PDF, slide) do user tải lên.
 - Owner: User hoàn toàn sở hữu và kiểm soát.
@@ -91,10 +91,6 @@
 **Riskiest assumption:** Sinh viên *chưa* có cách tự biết điểm yếu — tức là họ đang ra quyết định học theo cảm tính, không theo data.
 
 **Cheapest test:** Phỏng vấn 5 sinh viên Y bằng một câu duy nhất: *"Lần gần nhất ôn thi, bạn quyết định học phần nào trước như thế nào?"* — nếu câu trả lời là "tôi đọc slide từ đầu" hoặc "tôi học phần nào cảm giác không chắc" → hypothesis được ủng hộ. Nếu câu trả lời là "tôi có checklist cụ thể" → cần revisit.
-
-### Hypothesis 2 — Trust via Traceability
-> "Chúng tôi tin rằng [khi câu hỏi chẩn đoán có thể trace ngược về đúng đoạn text trong tài liệu gốc], sinh viên Y khoa sẽ tin tưởng kết quả chẩn đoán đủ để học theo — thay vì bỏ qua vì nghi AI bịa.
-> Chúng tôi sẽ biết mình đúng khi [tỷ lệ 'click Xem Nguồn → tiếp tục học' > tỷ lệ 'click Xem Nguồn → bỏ app']."
 
 ---
 
